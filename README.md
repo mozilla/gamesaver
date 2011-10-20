@@ -1,11 +1,15 @@
-## MyFavoriteBeer.org - A BrowserID example site
+## GameSaver - a server to save games as JSON blobs using browserId for identification
 
 This repo is a fork of [MyFavoriteBeer](https://github.com/lloyd/myfavoritebeer.org/)
 being used as the basis for a prototype game-saving server written in node.js
-that uses [BrowserID](https://browserid.org) to authenticate players who wish
-to save their games.
+that uses [BrowserID](https://browserid.org) and a simple game that uses this
+server to save games.  See our 
+[Pivotal Tracker Project](https://www.pivotaltracker.com/projects/396209) where
+we've seeded some initial user stories for implementation.
 
-Games are saved as JSON blobs.
+At this moment, almost everything in this repo (including the rest of this
+file) is exactly the same as the original repo, and relevant to remembering
+beer but not to saving games.  If this project is successful, that will change!
 
 ## Overview
 

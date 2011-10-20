@@ -1,8 +1,11 @@
 ## MyFavoriteBeer.org - A BrowserID example site
 
-This is a simple site that demonstrates how
-[BrowserID](https://browserid.org) can be used to build a better login
-experience for users.
+This repo is a fork of [MyFavoriteBeer](https://github.com/lloyd/myfavoritebeer.org/)
+being used as the basis for a prototype game-saving server written in node.js
+that uses [BrowserID](https://browserid.org) to authenticate players who wish
+to save their games.
+
+Games are saved as JSON blobs.
 
 ## Overview
 

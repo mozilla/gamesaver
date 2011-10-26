@@ -1,7 +1,6 @@
 /******************************************************
 /* TicTacToe.js 
 /* Created By: Jesse Silver
-/* Date: October 21, 2011
 /* Usage: Create a new instance of TicTacToe, sending in
 /* a canvas element id string as the parameter.
 /* For use with: The Gladius Server Saving/Loading API
@@ -101,7 +100,10 @@ var TicTacToe = function(c) {
         }
         bIDImg = p.loadImage('sign_in_blue.png');
         browserIDButton = new Rectangle(2, 410, 79, 22);
-        browserIDButton.draw = function() { if (!browserID.loggedIn) p.image(bIDImg, this.x, this.y); };
+        browserIDButton.draw = function() { 
+            if (!browserID.loggedIn) p.image(bIDImg, this.x, this.y); 
+            else p.text('Log Out', this.x, this.y+10);
+        };
         if (!browserID.loggedIn) clearTiles();
         setupEvents();
         draw();
@@ -143,7 +145,7 @@ var TicTacToe = function(c) {
     function setupEvents() {
         if (!browserID.loggedIn) randomStart();
         p.mouseClicked = function() {
-            if (browserIDButton.contains(p.mouseX, p.mouseY) && !browserID.loggedIn) {
+            if (browserIDButton.contains(p.mouseX, p.mouseY)) {
                 browserIDButton.onClick();
             } else {
                 if (!finished) {
@@ -166,7 +168,8 @@ var TicTacToe = function(c) {
         };
         
         browserIDButton.onClick = function() {
-            browserID.verify();
+            if (!browserID.loggedIn) browserID.login();
+            else browserID.logout();
         }
     }
     
@@ -208,7 +211,6 @@ var TicTacToe = function(c) {
             p.text(tiles[i], size*(i%3)+(size/2)-(w/2), 
                              size*(parseInt(i/3))+95);
         }
-        browserIDButton.draw();
         p.fill(255, 255, 255);
         drawStats();
     }
@@ -223,8 +225,9 @@ var TicTacToe = function(c) {
         p.fill(0, 0, 0);
         p.textFont(smallFont);
         p.text(txt, 410, 20);
+        browserIDButton.draw();
         if (finished) p.text('Game Completed! Click to Continue...', 410, 400);
-        if (browserID.loggedIn) p.text('Logged in: ' + browserID.email, 2, 420);
+        if (browserID.loggedIn) p.text('Logged in: ' + browserID.email, 100, 420);
         if (fadingText) fadingText.draw();
         p.textFont(largeFont);
         p.fill(255, 255, 255);

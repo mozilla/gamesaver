@@ -14,7 +14,7 @@ var BrowserID = function(gameTitle, callback) {
         }
     } 
 
-    this.verify = function() {
+    this.login = function() {
         navigator.id.getVerifiedEmail(function(assertion, callback, errback) {
             var audience = document.domain || 'null';
             if (assertion) {
@@ -23,7 +23,6 @@ var BrowserID = function(gameTitle, callback) {
                     url: '/api/login',
                     data: { assertion: assertion, audience: audience },
                     success: function(res, status, xhr) {
-		            alert(res);
                         if (res) {
                             email = res;
                             success(res, callback);
@@ -38,6 +37,17 @@ var BrowserID = function(gameTitle, callback) {
                 fail();
         });
         return loggedIn;
+    };
+
+    this.logout = function() {
+        $.ajax({
+            type: 'POST',
+            url: '/api/logout',
+            success: function() {
+                that.setSessions();
+                loggedIn = false;
+            }
+        });
     };
     
     this.send = function(data, callback, errback) {

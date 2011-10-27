@@ -1,6 +1,7 @@
 /******************************************************
 /* TicTacToe.js 
 /* Created By: Jesse Silver
+/* Date: October 21, 2011
 /* Usage: Create a new instance of TicTacToe, sending in
 /* a canvas element id string as the parameter.
 /* For use with: The Gladius Server Saving/Loading API
@@ -84,9 +85,23 @@ var TicTacToe = function(c) {
         for (var i=0; i<9; ++i)
             tiles[i] = ' ';
     }
+
+    function checkButtons() {
+        if (browserID.loggedIn) {
+            browserID.checkEmpty(function(empty) {
+                if (empty) $('#load').hide();
+                else $('#load').show();
+            });
+            $('#save').show();
+        } else {
+            $('#load').hide();
+            $('#save').hide();
+        }
+    }
         
     function setup(processing) {
         browserID = new BrowserID('TicTacToe', that.loadData);
+        checkButtons();
         p = processing;
         p.size(700, 430);
         size = 133;
@@ -124,6 +139,7 @@ var TicTacToe = function(c) {
                 finished = save.data.finished;
             });
         }
+        checkButtons();
     };
 
     this.saveData = function() {
@@ -137,6 +153,7 @@ var TicTacToe = function(c) {
                 turn: turn,
                 finished: finished
             });
+            checkButtons();
         }
     };
     
@@ -168,8 +185,10 @@ var TicTacToe = function(c) {
         };
         
         browserIDButton.onClick = function() {
-            if (!browserID.loggedIn) browserID.login();
-            else browserID.logout();
+            if (!browserID.loggedIn) 
+                browserID.login(checkButtons, checkButtons);
+            else 
+                browserID.logout(checkButtons, checkButtons);
         }
     }
     

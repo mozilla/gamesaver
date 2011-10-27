@@ -41,7 +41,7 @@ exports.get = function(collection, email, title, cb) {
   c.toArray(function(err, docs) {
     if (err) return cb(err);
     if (docs.length != 1) return cb("consistency error!  more than one doc returned!");
-    console.log(docs[0]);
+    //console.log(docs[0]);
     cb(undefined, docs[0]);
   });
 };

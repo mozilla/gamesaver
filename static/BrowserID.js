@@ -5,8 +5,8 @@ var BrowserID = function(gameTitle, callback) {
     this.__defineGetter__('loggedIn', function() { return loggedIn; });
     this.__defineGetter__('email', function() { return email; });
     
-    var fail = function(res, errback) { loggedIn = false; if (errback) errback(res); };
-    var success = function(res, callback) { loggedIn = true; if (callback) callback(res); };
+    var fail = function(res, errback, errback2) { loggedIn = false; if (errback) errback(res);  if (errback2) errback2(res); };
+    var success = function(res, callback, callback2) { loggedIn = true; if (callback) callback(res); if (callback2) callback2(res); };
     
     this.setSessions = function(val) {
         if (navigator.id) {
@@ -14,7 +14,7 @@ var BrowserID = function(gameTitle, callback) {
         }
     } 
 
-    this.login = function() {
+    this.login = function(callback2, errback2) {
         navigator.id.getVerifiedEmail(function(assertion, callback, errback) {
             var audience = document.domain || 'null';
             if (assertion) {
@@ -25,27 +25,31 @@ var BrowserID = function(gameTitle, callback) {
                     success: function(res, status, xhr) {
                         if (res) {
                             email = res;
-                            success(res, callback);
+                            success(res, callback, callback2);
                         } else 
-                            fail(res, errback);
+                            fail(res, errback, errback2);
                     },
                     error: function(res, status, xhr) {  
-                        fail(res, errback);
+                        fail(res, errback, errback2);
                     }
                 });
             } else
-                fail();
+                fail(null, errback2);
         });
         return loggedIn;
     };
 
-    this.logout = function() {
+    this.logout = function(callback, errback) {
         $.ajax({
             type: 'POST',
             url: '/api/logout',
             success: function() {
                 that.setSessions();
                 loggedIn = false;
+                if (callback) callback();
+            },
+            error: function() {
+                if (errback) errback();
             }
         });
     };
@@ -69,7 +73,7 @@ var BrowserID = function(gameTitle, callback) {
     };
     
     this.receive = function(callback, errback) {
-	$.ajax({
+	    $.ajax({
             type: 'GET',
             url: '/api/get',
             data: { gameTitle: gameTitle },
@@ -81,6 +85,15 @@ var BrowserID = function(gameTitle, callback) {
                 if (errback) errback(res);
             }
         });
+    };
+
+    this.checkEmpty = function(callback) {
+        that.receive(function(res) {
+            if (res && JSON.stringify(res.data))
+                callback(false);
+            else
+                callback(true);
+        }, function(res) { callback(true); });
     };
     
     (function() {

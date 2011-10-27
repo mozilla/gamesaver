@@ -262,5 +262,7 @@ var TicTacToe = function(c) {
     this.__defineGetter__('isFinished', function() { return finished; });
     
     // Create Processing.js instance
-    (function() new Processing(document.getElementById(c), setup))();
+    (function() {
+        new Processing(document.getElementById(c), setup)
+    })();
 }

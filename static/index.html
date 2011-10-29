@@ -1,72 +1,22 @@
-<!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>My Favorite Beer, a BrowserID example</title>
-    <!--[if lt IE 9]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link href='http://fonts.googleapis.com/css?family=Special+Elite&v1' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Shadows+Into+Light&v1' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet/less" type="text/css" href="style.less">
-    <script src="js/less.js" type="text/javascript"></script>
-  </head>
-  <body>
-
-    <header>
-      <div>
-        <h1 id="title">My Favorite Beer</h1>
-        <div class="picture"></div>
-        <div class="login"></div>
-      </div>
-    </header>
-
-    <div id="content">
-
-      <div class="intro">
-        <p>
-          <strong>MyFavoriteBeer.org</strong> helps you remember your own favorite beer 
-          <strong>in the cloud</strong>.  This is useful for times when you are in a bar and 
-          <strong>cannot remember</strong> what your <strong>favorite beer</strong> is.
-        </p>
-        <p>
-          To get started, sign in above!  This <em>awesome</em> service is 
-          <strong>totally free</strong>!
-        </p>
-      </div>
-
-      <div class="business" style="display: none;">
-        <p>
-          My Favorite Beer IS:
-        </p>
-        <p>
-          <input type="text">
-        </p>
-        <p>
-          (click ^^ to modify, &lt;enter&gt; saves)
-        </p>
-      </div>
-    </div>
-
-    <footer>
-      <div>
-        MyFavoriteBeer.org is a simple demo of how to use
-        <a href="https://browserid.org"><img src="i/browserid_logo_sm.png" alt="BrowserID"></a>
-        to build a snazzy passphraseless login flow.  You can refer to the
-        <a href="https://github.com/lloyd/myfavoritebeer.org/">source code</a> for
-        details.  (a <a href="http://mozillalabs.com">mozilla labs</a> thing).
-
-        <small>
-          (Thanks to <a href="http://www.flickr.com/photos/bitzi/236037776/">@bitzi for the photo</a>,
-          and the <a href="https://myfavouritesandwich.org">unhosted dudes for the concept</a>)
-        </small>
-
-      </div>
-    </footer>
-
-  </body>
+<head>
+  <script src="processing.js"></script>
+  <script src="http://code.jquery.com/jquery-1.6.4.min.js" type="text/javascript"></script>
   <script src="https://browserid.org/include.js" type="text/javascript"></script>
-  <script src="js/jquery.js" type="text/javascript"></script>
-  <script src="https://crypto-js.googlecode.com/files/2.2.0-crypto-md5.js" type="text/javascript"></script>
-  <script src="js/main.js" type="text/javascript"></script>
+  <script src="BrowserID.js" type="text/javascript"></script>
+  <script src="TicTacToe.js"></script>
+<title>TicTacToe - Simple Loading/Saving Test</title>
+</head>
+
+<p><canvas id="canvas1" width="800" height="800"></canvas></p>
+<input id='save' type="submit" value="Save"/> <input id='load' type="submit" value="Load"/>
+
+<script id="script1" type="text/javascript">
+    var game = new TicTacToe('canvas1');
+    $('#save').click(game.saveData);
+    $('#load').click(game.loadData);
+</script>
+
+<div style="height:0px;width:0px;overflow:hidden;"></div>
+
 </html>

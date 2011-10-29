@@ -18,7 +18,8 @@ const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!
 const IP_ADDRESS = process.env.IP_ADDRESS || '127.0.0.1';
 
 // The port to listen to.
-const PORT = process.env.PORT || 0;
+//const PORT = process.env.PORT || 0;
+const PORT = 54321;
 
 // localHostname is the address to which we bind.  It will be used
 // as our external address ('audience' to which assertions will be set)
@@ -76,9 +77,9 @@ function determineBrowserIDURL(req) {
 
   return ({
     prod:   'https://browserid.org',
-    beta:   'https://diresworb.org',
-    dev:    'https://dev.diresworb.org',
-    local:  'https://dev.diresworb.org'
+    beta:   'https://browserid.org',
+    dev:    'https://browserid.org',
+    local:  'https://browserid.org'
   })[determineEnvironment(req)];
 }
 
@@ -92,7 +93,6 @@ app.use(postprocess.middleware(function(req, body) {
   return body.toString().replace(new RegExp("https://browserid.org", 'g'), browseridURL);
 }));
 
-
 // /api/whoami is an API that returns the authentication status of the current session.
 // it returns a JSON encoded string containing the currently authenticated user's email
 // if someone is logged in, otherwise it returns null.
@@ -100,7 +100,6 @@ app.get("/api/whoami", function (req, res) {
   if (req.session && typeof req.session.email === 'string') return res.json(req.session.email);
   return res.json(null);
 });
-
 
 // /api/login is an API which authenticates the current session.  The client includes 
 // an assertion in the post body (returned by browserid's navigator.id.getVerifiedEmail()).
@@ -168,7 +167,7 @@ app.get("/api/get", function (req, res) {
 
   if (!email) {
     res.writeHead(400, {"Content-Type": "text/plain"});
-    res.write("Bad Request: you must be authenticated to get your beer");
+    res.write("Bad Request: you must be authenticated to get your game data");
     res.end();
     return;
   }
@@ -178,13 +177,13 @@ app.get("/api/get", function (req, res) {
     return res.json("no database");
   }
 
-  db.get(determineEnvironment(req), email, function(err, beer) {
+  db.get('Games', email, req.query['gameTitle'], function(err, data) {
     if (err) {
-      console.log("error getting beer for", email); 
-      res.writeHead(500);
-      res.end();
+        res.writeHead(500);
+        res.end();
     } else {
-      res.json(beer);
+        console.log(data);
+        res.json(data);
     }
   });
 });
@@ -201,13 +200,17 @@ app.post("/api/set", function (req, res) {
     return;
   }
 
-  var beer = req.body.beer;
+  var data = req.body.data;
 
-  if (!beer) {
+  if (!data) {
     res.writeHead(400, {"Content-Type": "text/plain"});
-    res.write("Bad Request: a 'beer' parameter is required to set your favorite beer");
+    res.write("Bad Request: Invalid parameters");
     res.end();
     return;
+  } else {
+    console.log('Title: ' + req.body.gameTitle);
+    console.log('Email: ' + email);
+    console.log(JSON.stringify(data));
   }
 
   if (!havePersistence) {
@@ -215,14 +218,13 @@ app.post("/api/set", function (req, res) {
     return res.json(true);
   }
 
-  db.set(determineEnvironment(req), email, beer, function(err) {
-    if (err) {
-      console.log("setting beer for", email, "to", beer); 
-      res.writeHead(500);
-      res.end();
-    } else {
-      res.json(true);
-    }
+  db.set('Games', email, req.body.gameTitle, data, function(err) {
+        if (err) {
+            res.writeHead(500);
+            res.end();
+        } else {
+            res.json(true);
+        }
   });
 });
 

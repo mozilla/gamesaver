@@ -1,0 +1,5 @@
+[ -d log ] || mkdir log
+nohup ~/mongodb/bin/mongod > log/gamesaverDB.log 2> log/gamesaverDB.err < /dev/null &
+nohup node server/main.js > log/gamesaver.log 2> log/gamesaver.err < /dev/null &
+echo "Now running GameSaver server on http://localhost:54321"
+echo "Logging all output to files in the log folder."

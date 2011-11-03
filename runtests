@@ -1,0 +1,8 @@
+[ -d log ] || mkdir log
+nohup ~/mongodb/bin/mongod > log/gamesaverDB.log 2> log/gamesaverDB.err < /dev/null &
+sleep 1
+nohup node server/main.js test > log/gamesaver.log 2> log/gamesaver.err < /dev/null &
+echo "Running all GameSaver server tests..."
+sleep 3
+vows
+killall mongod node

@@ -59,8 +59,8 @@ var BrowserID = function(gameTitle, callback) {
             type: 'POST',
             url: '/api/set',
             data: { 
-	        	data: JSON.stringify(data), 
-        		gameTitle: gameTitle 
+	    	data: JSON.stringify(data), 
+       		gameTitle: gameTitle 
             },
             dataType: 'json',
             success: function(res, status, xhr) {

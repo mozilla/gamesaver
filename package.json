@@ -5,9 +5,11 @@
     "express": "2.4.6",
     "postprocess": "0.0.2",
     "connect-cookie-session" : "0.0.2",
-    "mongodb": "0.9.6-16"
+    "mongodb": "0.9.6-16",
+    "api-easy": "0.2.x"
   },
   "scripts": {
-    "start": "node server/main.js"
+    "start": "node server/main.js",
+    "tests": "vows"
   }
 }

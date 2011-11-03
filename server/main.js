@@ -9,7 +9,9 @@ postprocess = require('postprocess'),
 https = require('https'),
 querystring = require('querystring'),
 db = require('./db.js'),
-url = require('url');
+url = require('url'),
+test = process.argv[2],
+testEmail = test ? process.argv[3] || 'testEmail' : '';
 
 // the key with which session cookies are encrypted
 const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!';
@@ -93,11 +95,20 @@ app.use(postprocess.middleware(function(req, body) {
   return body.toString().replace(new RegExp("https://browserid.org", 'g'), browseridURL);
 }));
 
+function checkTesting(req) {
+  if (test === 'test') {
+    req.session.email = req.session.email || testEmail;
+    return true;
+  }
+  return false;
+};
+
 // /api/whoami is an API that returns the authentication status of the current session.
 // it returns a JSON encoded string containing the currently authenticated user's email
 // if someone is logged in, otherwise it returns null.
 app.get("/api/whoami", function (req, res) {
-  if (req.session && typeof req.session.email === 'string') return res.json(req.session.email);
+  if ((req.session && typeof req.session.email === 'string') || checkTesting(req)) 
+    return res.json(req.session.email);
   return res.json(null);
 });
 
@@ -110,46 +121,51 @@ app.post("/api/login", function (req, res) {
   // To verify the assertion we initiate a POST request to the browserid verifier service.
   // If we didn't want to rely on this service, it's possible to implement verification
   // in a library and to do it ourselves.  
-  var vreq = https.request({
-    host: determineBrowserIDHost(req),
-    path: "/verify",
-    method: 'POST'
-  }, function(vres) {
-    var body = "";
-    vres.on('data', function(chunk) { body+=chunk; } )
-        .on('end', function() {
-          try {
-            var verifierResp = JSON.parse(body);
-            var valid = verifierResp && verifierResp.status === "okay";
-            var email = valid ? verifierResp.email : null;
-            req.session.email = email;
-            if (valid) {
-              console.log("assertion verified successfully for email:", email);
-            } else {
-              console.log("failed to verify assertion:", verifierResp.reason);
-            }                
-            res.json(email);
-          } catch(e) {
-            console.log("non-JSON response from verifier");
-            // bogus response from verifier!  return null
-            res.json(null);
-          }
-        });
-  });
-  vreq.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+  if (checkTesting(req)) {
+      res.json(req.session.email);
+  } else {
+      var vreq = https.request({
+        host: determineBrowserIDHost(req),
+        path: "/verify",
+        method: 'POST'
+      }, function(vres) {
+        var body = "";
+        vres.on('data', function(chunk) { body+=chunk; } )
+            .on('end', function() {
+              try {
+                var verifierResp = JSON.parse(body);
+                console.log(body);
+                var valid = verifierResp && verifierResp.status === "okay";
+                var email = valid ? verifierResp.email : null;
+                req.session.email = email;
+                if (valid) {
+                  console.log("assertion verified successfully for email:", email);
+                } else {
+                  console.log("failed to verify assertion:", verifierResp.reason);
+                }                
+                res.json(email);
+              } catch(e) {
+                console.log("non-JSON response from verifier");
+                // bogus response from verifier!  return null
+                res.json(null);
+              }
+            });
+      });
+      vreq.setHeader('Content-Type', 'application/x-www-form-urlencoded');
 
-  // An "audience" argument is embedded in the assertion and must match our hostname.
-  // Because this one server runs on multiple different domain names we just use
-  // the host parameter out of the request.
-  var audience = req.headers['host'] ? req.headers['host'] : localHostname;   
-  var data = querystring.stringify({
-    assertion: req.body.assertion,
-    audience: audience
-  });
-  vreq.setHeader('Content-Length', data.length);
-  vreq.write(data);
-  vreq.end();
-  console.log("verifying assertion!");
+      // An "audience" argument is embedded in the assertion and must match our hostname.
+      // Because this one server runs on multiple different domain names we just use
+      // the host parameter out of the request.
+      var audience = req.headers['host'] ? req.headers['host'] : localHostname;   
+      var data = querystring.stringify({
+        assertion: req.body.assertion,
+        audience: audience
+      });
+      vreq.setHeader('Content-Length', data.length);
+      vreq.write(data);
+      vreq.end();
+      console.log("verifying assertion!");
+  }
 });
 
 // /api/logout clears the session cookie, effectively terminating the current session.
@@ -162,9 +178,8 @@ app.post("/api/logout", function (req, res) {
 // beer out of the database.
 app.get("/api/get", function (req, res) {
   var email;
-
-  if (req.session && typeof req.session.email === 'string') email = req.session.email;
-
+  if (checkTesting(req) || (req.session && typeof req.session.email === 'string')) 
+	email = req.session.email;
   if (!email) {
     res.writeHead(400, {"Content-Type": "text/plain"});
     res.write("Bad Request: you must be authenticated to get your game data");
@@ -193,24 +208,27 @@ app.get("/api/get", function (req, res) {
 app.post("/api/set", function (req, res) {
   var email = req.session.email;
 
-  if (!email) {
+  if (!email && !checkTesting(req)) {
     res.writeHead(400, {"Content-Type": "text/plain"});
     res.write("Bad Request: you must be authenticated to get your beer");
     res.end();
     return;
   }
+  
+  if (test === 'test') email = req.session.email;
 
   var data = req.body.data;
 
   if (!data) {
+    console.log('invalid data parameter');
     res.writeHead(400, {"Content-Type": "text/plain"});
     res.write("Bad Request: Invalid parameters");
     res.end();
     return;
   } else {
-    console.log('Title: ' + req.body.gameTitle);
-    console.log('Email: ' + email);
-    console.log(JSON.stringify(data));
+    //console.log('Title: ' + req.body.gameTitle);
+    //console.log('Email: ' + email);
+    //console.log(JSON.stringify(data));
   }
 
   if (!havePersistence) {
@@ -219,12 +237,12 @@ app.post("/api/set", function (req, res) {
   }
 
   db.set('Games', email, req.body.gameTitle, data, function(err) {
-        if (err) {
-            res.writeHead(500);
-            res.end();
-        } else {
-            res.json(true);
-        }
+    if (err) {
+      res.writeHead(500);
+      res.end();
+    } else {
+      res.json(true);
+    }
   });
 });
 

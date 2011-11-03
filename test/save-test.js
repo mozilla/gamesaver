@@ -21,10 +21,10 @@
               assert.strictEqual(JSON.parse(body), email);
             })
           .next()
-	      .post('/api/set', {
-            data: JSON.stringify(data),
-            gameTitle: gameTitle
-          })
+            .post('/api/set', {
+              data: JSON.stringify(data),
+              gameTitle: gameTitle
+            })
             .expect(200)
           .next()
           .get('/api/get', { gameTitle: gameTitle })
@@ -33,5 +33,5 @@
               assert.strictEqual(testData.email, email);
               assert.strictEqual(testData.title, gameTitle);
               assert.deepEqual(testData.data, data);
-	          })
+            })
           .export(module);

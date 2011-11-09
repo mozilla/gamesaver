@@ -11,7 +11,7 @@ querystring = require('querystring'),
 db = require('./db.js'),
 url = require('url'),
 test = process.env.TEST,
-testEmail = test ? process.env.EMAIL || 'testEmail' : '';
+testEmail = test ? process.env.EMAIL || 'testEmail@example.com' : '';
 
 // the key with which session cookies are encrypted
 const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!';
@@ -174,8 +174,7 @@ app.post("/api/logout", function (req, res) {
   res.json(true);
 });
 
-// /api/get requires an authenticated session, and accesses the current user's favorite
-// beer out of the database.
+// /api/get requires an authenticated session, and accesses the user's data for the game selected.
 app.get("/api/get", function (req, res) {
   var email;
   if (checkTesting(req) || (req.session && typeof req.session.email === 'string')) 
@@ -203,19 +202,18 @@ app.get("/api/get", function (req, res) {
   });
 });
 
-// /api/set requires an authenticated session, and sets the current user's favorite
-// beer in the database.
+// /api/set requires an authenticated session, and sets the current user's data for the game selected
 app.post("/api/set", function (req, res) {
   var email = req.session.email;
 
   if (!email && !checkTesting(req)) {
     res.writeHead(400, {"Content-Type": "text/plain"});
-    res.write("Bad Request: you must be authenticated to get your beer");
+    res.write("Bad Request: you must be authenticated to get your data");
     res.end();
     return;
   }
   
-  if (test === 'test') email = req.session.email;
+  if (test === 'true') email = req.session.email;
 
   var data = req.body.data;
 

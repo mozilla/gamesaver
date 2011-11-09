@@ -3,6 +3,6 @@ nohup ~/mongodb/bin/mongod > log/gamesaverDB.log 2> log/gamesaverDB.err < /dev/n
 sleep 1
 TEST=true nohup node server/main.js > log/gamesaver.log 2> log/gamesaver.err < /dev/null &
 echo "Running all GameSaver server tests..."
-sleep 3
+sleep 2
 npm test
 killall mongod node

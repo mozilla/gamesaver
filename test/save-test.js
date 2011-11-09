@@ -10,7 +10,7 @@ var data = {
   Score: 15000,
   Name: "wat"
 };
-var email = 'testEmail';
+var email = 'testEmail@example.com';
 
 suite.discuss('Testing the GameSaver Saving/Loading...')
         .use('localhost', 54321)
@@ -21,10 +21,10 @@ suite.discuss('Testing the GameSaver Saving/Loading...')
             assert.strictEqual(JSON.parse(body), email);
           })
         .next()
-          .post('/api/set', {
-            data: JSON.stringify(data),
-            gameTitle: gameTitle
-          })
+        .post('/api/set', {
+          data: JSON.stringify(data),
+          gameTitle: gameTitle
+        })
           .expect(200)
         .next()
         .get('/api/get', { gameTitle: gameTitle })

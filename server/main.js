@@ -10,8 +10,8 @@ https = require('https'),
 querystring = require('querystring'),
 db = require('./db.js'),
 url = require('url'),
-test = process.argv[2],
-testEmail = test ? process.argv[3] || 'testEmail' : '';
+test = process.env.TEST,
+testEmail = test ? process.env.EMAIL || 'testEmail' : '';
 
 // the key with which session cookies are encrypted
 const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!';
@@ -20,8 +20,7 @@ const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!
 const IP_ADDRESS = process.env.IP_ADDRESS || '127.0.0.1';
 
 // The port to listen to.
-//const PORT = process.env.PORT || 0;
-const PORT = 54321;
+const PORT = process.env.PORT || 54321;
 
 // localHostname is the address to which we bind.  It will be used
 // as our external address ('audience' to which assertions will be set)
@@ -96,7 +95,7 @@ app.use(postprocess.middleware(function(req, body) {
 }));
 
 function checkTesting(req) {
-  if (test === 'test') {
+  if (test === 'true') {
     req.session.email = req.session.email || testEmail;
     return true;
   }
@@ -123,49 +122,50 @@ app.post("/api/login", function (req, res) {
   // in a library and to do it ourselves.  
   if (checkTesting(req)) {
       res.json(req.session.email);
-  } else {
-      var vreq = https.request({
-        host: determineBrowserIDHost(req),
-        path: "/verify",
-        method: 'POST'
-      }, function(vres) {
-        var body = "";
-        vres.on('data', function(chunk) { body+=chunk; } )
-            .on('end', function() {
-              try {
-                var verifierResp = JSON.parse(body);
-                console.log(body);
-                var valid = verifierResp && verifierResp.status === "okay";
-                var email = valid ? verifierResp.email : null;
-                req.session.email = email;
-                if (valid) {
-                  console.log("assertion verified successfully for email:", email);
-                } else {
-                  console.log("failed to verify assertion:", verifierResp.reason);
-                }                
-                res.json(email);
-              } catch(e) {
-                console.log("non-JSON response from verifier");
-                // bogus response from verifier!  return null
-                res.json(null);
-              }
-            });
-      });
-      vreq.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+      return;
+  } 
+  var vreq = https.request({
+    host: determineBrowserIDHost(req),
+    path: "/verify",
+    method: 'POST'
+  }, function(vres) {
+    var body = "";
+    vres.on('data', function(chunk) { body+=chunk; } )
+        .on('end', function() {
+          try {
+            var verifierResp = JSON.parse(body);
+            console.log(body);
+            var valid = verifierResp && verifierResp.status === "okay";
+            if (valid) {
+              var email = valid ? verifierResp.email : null;
+              req.session.email = email;
+              console.log("assertion verified successfully for email:", email);
+              res.json(email);
+            } else {
+              console.log("failed to verify assertion:", verifierResp.reason);
+              res.json(null);
+            }                
+          } catch(e) {
+            console.log("non-JSON response from verifier");
+            // bogus response from verifier!  return null
+            res.json(null);
+          }
+        });
+  });
+  vreq.setHeader('Content-Type', 'application/x-www-form-urlencoded');
 
-      // An "audience" argument is embedded in the assertion and must match our hostname.
-      // Because this one server runs on multiple different domain names we just use
-      // the host parameter out of the request.
-      var audience = req.headers['host'] ? req.headers['host'] : localHostname;   
-      var data = querystring.stringify({
-        assertion: req.body.assertion,
-        audience: audience
-      });
-      vreq.setHeader('Content-Length', data.length);
-      vreq.write(data);
-      vreq.end();
-      console.log("verifying assertion!");
-  }
+  // An "audience" argument is embedded in the assertion and must match our hostname.
+  // Because this one server runs on multiple different domain names we just use
+  // the host parameter out of the request.
+  var audience = req.headers['host'] ? req.headers['host'] : localHostname;   
+  var data = querystring.stringify({
+    assertion: req.body.assertion,
+    audience: audience
+  });
+  vreq.setHeader('Content-Length', data.length);
+  vreq.write(data);
+  vreq.end();
+  console.log("verifying assertion!");
 });
 
 // /api/logout clears the session cookie, effectively terminating the current session.
@@ -225,10 +225,6 @@ app.post("/api/set", function (req, res) {
     res.write("Bad Request: Invalid parameters");
     res.end();
     return;
-  } else {
-    //console.log('Title: ' + req.body.gameTitle);
-    //console.log('Email: ' + email);
-    //console.log(JSON.stringify(data));
   }
 
   if (!havePersistence) {
@@ -260,5 +256,6 @@ db.connect(function(err) {
     var address = app.address();
     localHostname = address.address + ':' + address.port
     console.log("listening on " + localHostname);
+    if (test === 'true') console.log("running in test mode");
   });
 });

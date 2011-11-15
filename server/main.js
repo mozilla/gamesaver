@@ -9,7 +9,9 @@ postprocess = require('postprocess'),
 https = require('https'),
 querystring = require('querystring'),
 db = require('./db.js'),
-url = require('url');
+url = require('url'),
+test = process.env.TEST,
+testEmail = test ? process.env.EMAIL || 'testEmail@example.com' : '';
 
 // the key with which session cookies are encrypted
 const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!';
@@ -18,8 +20,7 @@ const COOKIE_SECRET = process.env.SEKRET || 'you love, i love, we all love beer!
 const IP_ADDRESS = process.env.IP_ADDRESS || '127.0.0.1';
 
 // The port to listen to.
-//const PORT = process.env.PORT || 0;
-const PORT = 54321;
+const PORT = process.env.PORT || 54321;
 
 // localHostname is the address to which we bind.  It will be used
 // as our external address ('audience' to which assertions will be set)
@@ -93,11 +94,20 @@ app.use(postprocess.middleware(function(req, body) {
   return body.toString().replace(new RegExp("https://browserid.org", 'g'), browseridURL);
 }));
 
+function checkTesting(req) {
+  if (test === 'true') {
+    req.session.email = req.session.email || testEmail;
+    return true;
+  }
+  return false;
+};
+
 // /api/whoami is an API that returns the authentication status of the current session.
 // it returns a JSON encoded string containing the currently authenticated user's email
 // if someone is logged in, otherwise it returns null.
 app.get("/api/whoami", function (req, res) {
-  if (req.session && typeof req.session.email === 'string') return res.json(req.session.email);
+  if ((req.session && typeof req.session.email === 'string') || checkTesting(req)) 
+    return res.json(req.session.email);
   return res.json(null);
 });
 
@@ -110,6 +120,10 @@ app.post("/api/login", function (req, res) {
   // To verify the assertion we initiate a POST request to the browserid verifier service.
   // If we didn't want to rely on this service, it's possible to implement verification
   // in a library and to do it ourselves.  
+  if (checkTesting(req)) {
+      res.json(req.session.email);
+      return;
+  } 
   var vreq = https.request({
     host: determineBrowserIDHost(req),
     path: "/verify",
@@ -120,15 +134,17 @@ app.post("/api/login", function (req, res) {
         .on('end', function() {
           try {
             var verifierResp = JSON.parse(body);
+            console.log(body);
             var valid = verifierResp && verifierResp.status === "okay";
-            var email = valid ? verifierResp.email : null;
-            req.session.email = email;
             if (valid) {
+              var email = valid ? verifierResp.email : null;
+              req.session.email = email;
               console.log("assertion verified successfully for email:", email);
+              res.json(email);
             } else {
               console.log("failed to verify assertion:", verifierResp.reason);
+              res.json(null);
             }                
-            res.json(email);
           } catch(e) {
             console.log("non-JSON response from verifier");
             // bogus response from verifier!  return null
@@ -158,13 +174,11 @@ app.post("/api/logout", function (req, res) {
   res.json(true);
 });
 
-// /api/get requires an authenticated session, and accesses the current user's favorite
-// beer out of the database.
+// /api/get requires an authenticated session, and accesses the user's data for the game selected.
 app.get("/api/get", function (req, res) {
   var email;
-
-  if (req.session && typeof req.session.email === 'string') email = req.session.email;
-
+  if (checkTesting(req) || (req.session && typeof req.session.email === 'string')) 
+	email = req.session.email;
   if (!email) {
     res.writeHead(400, {"Content-Type": "text/plain"});
     res.write("Bad Request: you must be authenticated to get your game data");
@@ -188,29 +202,27 @@ app.get("/api/get", function (req, res) {
   });
 });
 
-// /api/set requires an authenticated session, and sets the current user's favorite
-// beer in the database.
+// /api/set requires an authenticated session, and sets the current user's data for the game selected
 app.post("/api/set", function (req, res) {
   var email = req.session.email;
 
-  if (!email) {
+  if (!email && !checkTesting(req)) {
     res.writeHead(400, {"Content-Type": "text/plain"});
-    res.write("Bad Request: you must be authenticated to get your beer");
+    res.write("Bad Request: you must be authenticated to get your data");
     res.end();
     return;
   }
+  
+  if (test === 'true') email = req.session.email;
 
   var data = req.body.data;
 
   if (!data) {
+    console.log('invalid data parameter');
     res.writeHead(400, {"Content-Type": "text/plain"});
     res.write("Bad Request: Invalid parameters");
     res.end();
     return;
-  } else {
-    console.log('Title: ' + req.body.gameTitle);
-    console.log('Email: ' + email);
-    console.log(JSON.stringify(data));
   }
 
   if (!havePersistence) {
@@ -219,12 +231,12 @@ app.post("/api/set", function (req, res) {
   }
 
   db.set('Games', email, req.body.gameTitle, data, function(err) {
-        if (err) {
-            res.writeHead(500);
-            res.end();
-        } else {
-            res.json(true);
-        }
+    if (err) {
+      res.writeHead(500);
+      res.end();
+    } else {
+      res.json(true);
+    }
   });
 });
 
@@ -242,5 +254,6 @@ db.connect(function(err) {
     var address = app.address();
     localHostname = address.address + ':' + address.port
     console.log("listening on " + localHostname);
+    if (test === 'true') console.log("running in test mode");
   });
 });
